@@ -1,0 +1,4 @@
+- Organize notebooks
+- Make 2 normalized data sets
+- Find the best regression model
+- Cluster the data or use DTW to find patterns in time series data
