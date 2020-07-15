@@ -23,15 +23,15 @@ The .json’s file typical row is:
 
 Parameters:
 
-“timeStamp”: is the date time of the mesure.
+`“timeStamp”`: is the date time of the mesure.
 
-“Idflowmeter”: is the ID of the meter The peculiar series of water measures for two sensor IDs are yet to be explained by Braila.
+`“Idflowmeter”`: is the ID of the meter The peculiar series of water measures for two sensor IDs are yet to be explained by Braila.
 
-“Tot1”: is the water flow in m3
+`“Tot1”`: is the water flow in m3 - Flow in the direction of consumers(households). Can we viewed as flow that goes into the braila district  
 
-“Tot2”: is the water flow in m3. The difference between Tot1 and Tot2 are yet to be explained by Braila.
+`“Tot2”`: is the water flow in m3 - Flow that goes out the braila district.
 
-“Analog2”: is the water pressure of the measure point. The unit is probably Pascal, however not yet confirmed by Braila.
+`“Analog2”`: is the water pressure of the measure point. The unit is probably Pascal, however not yet confirmed by Braila.
 
 Download link for the data:
 https://yadi.sk/d/fMKEu9Ahe-TSlg
