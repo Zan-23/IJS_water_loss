@@ -27,7 +27,7 @@ Parameters:
 
 `“Idflowmeter”`: is the ID of the meter The peculiar series of water measures for two sensor IDs are yet to be explained by Braila.
 
-`“Tot1”`: is the water flow in m3 - Flow in the direction of consumers(households). Can we viewed as flow that goes into the braila district  
+`“Tot1”`: is the water flow in m3 - Flow in the direction of consumers(households). Can be viewed as flow that goes into the braila district  
 
 `“Tot2”`: is the water flow in m3 - Flow that goes out the braila district.
 
