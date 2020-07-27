@@ -110,6 +110,33 @@ class WaterMonitoringInstance:
         fig = px.line(self.data, x=name_x, y=name_y, height=600)
         fig.show()
 
+    def make_time_features(self, column_to_process, format="%d/%m/%Y %H:%M:%S"):
+        """
+        This method divide specified column into multiple columns which can be used to feature engineer predictions
+        :param column_to_process: Name of the column, which to split
+        :param format: Format in which the date is specified in the column
+        :return:
+        """
+        # TODO implement from existing code
+
+        return None
+
+    def calculate_correlation(self, col_name_1="", col_name_2=""):
+        """
+        This method calculates correlation between all the atributtes in the dataframe or just between two column.
+        :param col_name_1: If only this one is given calculate correlation from this to all,
+        if none is given calculate for all
+        :param col_name_2: If only this one is given calculate correlation from this to all,
+        if none is given calculate for all
+        """
+        if col_name_1 == "" and col_name_2 == "":
+            # TODO implement calculation of correlation for all attributes and print it
+            print()
+
+        else:
+            # TODO implement calculation of correlation just for the two given column names
+
+
     def get_data_frame(self):
         """
         Returns instance dataframe on which all operations are performed
@@ -123,3 +150,27 @@ class WaterMonitoringInstance:
         self.data = data
         self.file_name = file_name
 
+
+class Analayzer:
+    dataframe = None
+
+    def __int__(self, dataframe):
+        self.dataframe = dataframe
+
+    def linear_regression(self, matrix_X, vector_Y):
+        # TODO split into learn and test, automatic trying of linear, ridge and lasso
+        # TODO Return the best model and its predictions
+        pass
+        return None
+
+    def random_forest(self, matrix_X, vector_Y):
+        # TODO copy random forest from the existing implementations
+        # TODO return predictions
+        pass
+        return None
+
+    def hierarhical_clustering(self):
+        # TODO grouping based on all attributes, try out different sets of data
+        # TODO returns different classes depending on row number
+        pass
+        return None
