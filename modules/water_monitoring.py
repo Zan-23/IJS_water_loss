@@ -9,8 +9,6 @@ from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.ensemble import RandomForestRegressor
 
-# TODO implement random forest method for the class
-
 
 class WaterMonitoringInstance:
     """"
@@ -54,34 +52,35 @@ class WaterMonitoringInstance:
         :param del_cols: This is a flag which deletes unnecessary rows -> saving RAM
         """
         if city == "braila":
+            self.nan_data = self.data[(self.data.tot1 == 0) & (self.data.analog2 == 0)]
             self.data = self.data[(self.data.tot1 != 0) & (self.data.analog2 != 0)]
+
+            self.data.iloc[:, 0] = pandas.to_datetime(self.data.iloc[:, 0], format="%Y-%m-%d %H:%M:%S")
+
         elif city == "alicante":
             # saving rows with NaN in the first column
             self.nan_data = self.data[self.data.iloc[:, 0].isnull()]
-
             # removing all unknown dates from dataframe and converting first column to datetime
             self.data = self.data[self.data.iloc[:, 0].notna()]
-            self.data.iloc[:, 0] = pandas.to_datetime(self.data.iloc[:, 0], format="%d/%m/%Y %H:%M:%S")
 
-            first_col_splitted = self.data.iloc[:, 1].str.split(',', expand=True)
-            first_col_splitted.columns = ['Data-1(Sensor1)', 'Data-2(Sensor1)']
+            self.data.iloc[:, 0] = pandas.to_datetime(self.data.iloc[:, 0], format="%d/%m/%Y %H:%M:%S")
+            first_col = self.data.iloc[:, 1].str.replace(',', '.').astype(float)
             date_1_col = self.data.iloc[:, 0]
 
             if not del_cols:
                 date_2_col = self.data.iloc[:, 2]
-                second_col_splitted = self.data.iloc[:, 3].str.split(',', expand=True)
-                second_col_splitted.columns = ['Data-1(Sensor2)', 'Data-2(Sensor2)']
+                second_col = self.data.iloc[:, 3].str.replace(',', '.').astype(float)
 
-                new_data_f = pandas.concat([date_1_col, first_col_splitted, date_2_col, second_col_splitted], axis=1)
+                new_data_f = pandas.concat([date_1_col, first_col, date_2_col, second_col], axis=1)
                 new_data_f = new_data_f.fillna(-150)
-                new_data_f = new_data_f.astype({'Data-1(Sensor1)': 'int64', 'Data-2(Sensor1)': 'int64',
-                                                'Data-1(Sensor2)': 'int64', 'Data-2(Sensor2)': 'int64'})
+                new_data_f.rename(columns={new_data_f.columns[1]: "Data-1(Sensor1)",
+                                           new_data_f.columns[3]: "Data-1(Sensor2)"}, inplace=True)
                 self.data = new_data_f
             else:
                 # If flag is set, only the first 3 columns are returned as specified on drive
-                new_data_f = pandas.concat([date_1_col, first_col_splitted], axis=1)
-                new_data_f = new_data_f.fillna(-1)
-                new_data_f = new_data_f.astype({'Data-1(Sensor1)': 'int64', 'Data-2(Sensor1)': 'int64'})
+                new_data_f = pandas.concat([date_1_col, first_col], axis=1)
+                new_data_f = new_data_f.fillna(-150)
+                new_data_f.rename(columns={new_data_f.columns[1]: "Data-1(Sensor1)"}, inplace=True)
                 self.data = new_data_f
         else:
             raise Exception("Unknown city, modify transform_data to process other cities")
@@ -254,7 +253,7 @@ class Analyzer:
             time_col = time_col[len_of_test:]
 
         # RANDOM FOREST - 50 trees
-        regressor_rf = RandomForestRegressor(n_estimators=50, random_state=42)
+        regressor_rf = RandomForestRegressor(n_estimators=1000, random_state=42)
         regressor_rf.fit(learn_x, learn_y.ravel())
         y_predicted = regressor_rf.predict(test_x)
 
@@ -288,4 +287,37 @@ class Analyzer:
             timestamp_col = self.dataframe[time_col].to_numpy()
 
         return matrix_x, vector_col, timestamp_col
+
+
+"""
+        elif city == "alicante":
+            # saving rows with NaN in the first column
+            self.nan_data = self.data[self.data.iloc[:, 0].isnull()]
+
+            # removing all unknown dates from dataframe and converting first column to datetime
+            self.data = self.data[self.data.iloc[:, 0].notna()]
+            self.data.iloc[:, 0] = pandas.to_datetime(self.data.iloc[:, 0], format="%d/%m/%Y %H:%M:%S")
+
+            first_col_splitted = self.data.iloc[:, 1].str.split(',', expand=True)
+            first_col_splitted.columns = ['Data-1(Sensor1)', 'Data-2(Sensor1)']
+            date_1_col = self.data.iloc[:, 0]
+
+            if not del_cols:
+                date_2_col = self.data.iloc[:, 2]
+                second_col_splitted = self.data.iloc[:, 3].str.split(',', expand=True)
+                second_col_splitted.columns = ['Data-1(Sensor2)', 'Data-2(Sensor2)']
+
+                new_data_f = pandas.concat([date_1_col, first_col_splitted, date_2_col, second_col_splitted], axis=1)
+                new_data_f = new_data_f.fillna(-150)
+                new_data_f = new_data_f.astype({'Data-1(Sensor1)': 'int64', 'Data-2(Sensor1)': 'int64',
+                                                'Data-1(Sensor2)': 'int64', 'Data-2(Sensor2)': 'int64'})
+                self.data = new_data_f
+            else:
+                # If flag is set, only the first 3 columns are returned as specified on drive
+                new_data_f = pandas.concat([date_1_col, first_col_splitted], axis=1)
+                new_data_f = new_data_f.fillna(-1)
+                new_data_f = new_data_f.astype({'Data-1(Sensor1)': 'int64', 'Data-2(Sensor1)': 'int64'})
+                self.data = new_data_f
+
+"""
 
