@@ -180,6 +180,21 @@ class WaterMonitoringInstance:
         # sorts coefficient array and returns it
         return sorted(coef_arr, key=lambda tup: tup[1])
 
+    def take_data_in_range(self, start_date, end_date, col_name, date_format="%Y-%m-%d %H:%M:%S"):
+        """
+        This method returns a subset of the data frame between two dates.
+
+        :param start_date: Starting date, data will be filtered from this day forward
+        :param end_date: End data, date will be filtered to this day
+        :param col_name: Column in which the timestamp are located
+        :param date_format: Format of the date, a default format is given
+        :return: Returns subset of the data between ranges
+        """
+        start_date = pandas.to_datetime(start_date, format=date_format)
+        end_date = pandas.to_datetime(end_date, format=date_format)
+
+        return self.data.loc[(self.data[col_name] >= start_date) & (self.data[col_name] <= end_date)]
+
     def get_nan_rows(self):
         return self.nan_data
 
@@ -214,8 +229,17 @@ class Analyzer:
         pass
         return None
 
-    def random_forest(self, matrix_cols, vector_col):
-        matrix_x, vector_y = self.generate_matrix_and_vector(matrix_cols, vector_col)
+    def random_forest(self, matrix_cols, vector_col, time_col_name=""):
+        """
+        This method builds a random forest model based on the sklearn library.
+
+        :param matrix_cols: Columns which you want to include in matrix X
+        :param vector_col: Column which you want to predict
+        :param time_col_name: Column in which the time series is stored(used for plotting predictions)
+        :return: Returns the actual y values, predicted values of y and
+        the timeframe for which the values were generated
+        """
+        matrix_x, vector_y, time_col = self.generate_matrix_and_vector(matrix_cols, vector_col, time_col_name)
         if len(matrix_x) != len(vector_y):
             raise Exception("Matrix X and vector Y must be of the same length !!")
 
@@ -226,9 +250,11 @@ class Analyzer:
 
         test_x = matrix_x[len_of_test:]
         test_y = vector_y[len_of_test:]
+        if time_col is not None:
+            time_col = time_col[len_of_test:]
 
-        # RANDOM FOREST - 1000 trees
-        regressor_rf = RandomForestRegressor(n_estimators=10, random_state=42)
+        # RANDOM FOREST - 50 trees
+        regressor_rf = RandomForestRegressor(n_estimators=50, random_state=42)
         regressor_rf.fit(learn_x, learn_y.ravel())
         y_predicted = regressor_rf.predict(test_x)
 
@@ -237,7 +263,7 @@ class Analyzer:
         diff = mean_squared_error(test_y, y_predicted)
         print("MSE result:", diff)
 
-        return test_y, y_predicted
+        return test_y, y_predicted, time_col
 
     def hierarhical_clustering(self):
         # TODO grouping based on all attributes, try out different sets of data
@@ -245,16 +271,21 @@ class Analyzer:
         pass
         return None
 
-    def generate_matrix_and_vector(self, matrix_cols, vector_col):
+    def generate_matrix_and_vector(self, matrix_cols, vector_col, time_col):
         """
         This method generate matrix X and vector Y which are used in most of the methods of this for building models.
 
         :param matrix_cols: Columns which you want to include in matrix X
         :param vector_col: Column which you want to predict
-        :return: Returns two arrays, matrix X and vector Y
+        :param time_col:  Column in which the time series is stored(used for plotting predictions)
+        :return: Returns three arrays, matrix X and vector Y and timestamp array
         """
         matrix_x = self.dataframe[matrix_cols].to_numpy()
         vector_col = self.dataframe[vector_col].to_numpy()
+        timestamp_col = None
 
-        return matrix_x, vector_col
+        if time_col != "":
+            timestamp_col = self.dataframe[time_col].to_numpy()
+
+        return matrix_x, vector_col, timestamp_col
 
