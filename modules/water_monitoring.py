@@ -1,11 +1,15 @@
 import pandas as pandas
+import numpy as np
+
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 from scipy.stats import pearsonr, spearmanr, kendalltau
-import numpy as np
+from sklearn.linear_model import LinearRegression, Lasso, Ridge
+from sklearn.metrics import r2_score, mean_squared_error
+from sklearn.ensemble import RandomForestRegressor
+
 # TODO implement random forest method for the class
-# TODO implement method for calculating of correlation between attributes and then printing it
 
 
 class WaterMonitoringInstance:
@@ -198,10 +202,10 @@ class WaterMonitoringInstance:
         self.data = self.data.set_index(column_name)
 
 
-class Analayzer:
+class Analyzer:
     dataframe = None
 
-    def __int__(self, dataframe):
+    def __init__(self, dataframe):
         self.dataframe = dataframe
 
     def linear_regression(self, matrix_X, vector_Y):
@@ -210,14 +214,47 @@ class Analayzer:
         pass
         return None
 
-    def random_forest(self, matrix_X, vector_Y):
-        # TODO copy random forest from the existing implementations
-        # TODO return predictions
-        pass
-        return None
+    def random_forest(self, matrix_cols, vector_col):
+        matrix_x, vector_y = self.generate_matrix_and_vector(matrix_cols, vector_col)
+        if len(matrix_x) != len(vector_y):
+            raise Exception("Matrix X and vector Y must be of the same length !!")
+
+        # Splitting on learn and test
+        len_of_test = round(len(matrix_x) * 0.7)
+        learn_x = matrix_x[:len_of_test]
+        learn_y = vector_y[:len_of_test]
+
+        test_x = matrix_x[len_of_test:]
+        test_y = vector_y[len_of_test:]
+
+        # RANDOM FOREST - 1000 trees
+        regressor_rf = RandomForestRegressor(n_estimators=10, random_state=42)
+        regressor_rf.fit(learn_x, learn_y.ravel())
+        y_predicted = regressor_rf.predict(test_x)
+
+        r2_random_f = r2_score(test_y, y_predicted)
+        print("Random forest regression R2: ", r2_random_f)
+        diff = mean_squared_error(test_y, y_predicted)
+        print("MSE result:", diff)
+
+        return test_y, y_predicted
 
     def hierarhical_clustering(self):
         # TODO grouping based on all attributes, try out different sets of data
         # TODO returns different classes depending on row number
         pass
         return None
+
+    def generate_matrix_and_vector(self, matrix_cols, vector_col):
+        """
+        This method generate matrix X and vector Y which are used in most of the methods of this for building models.
+
+        :param matrix_cols: Columns which you want to include in matrix X
+        :param vector_col: Column which you want to predict
+        :return: Returns two arrays, matrix X and vector Y
+        """
+        matrix_x = self.dataframe[matrix_cols].to_numpy()
+        vector_col = self.dataframe[vector_col].to_numpy()
+
+        return matrix_x, vector_col
+
