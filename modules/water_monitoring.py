@@ -2,7 +2,8 @@ import pandas as pandas
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
-# TODO implement saving of NaN data as it can be useful
+from scipy.stats import pearsonr, spearmanr, kendalltau
+import numpy as np
 # TODO implement random forest method for the class
 # TODO implement method for calculating of correlation between attributes and then printing it
 
@@ -15,6 +16,7 @@ class WaterMonitoringInstance:
     file_name - name of the file that the data was read from
     """
     file_name = ""
+    nan_data = None
     data = None
 
     def read_data(self, file_name, separator):
@@ -50,6 +52,9 @@ class WaterMonitoringInstance:
         if city == "braila":
             self.data = self.data[(self.data.tot1 != 0) & (self.data.analog2 != 0)]
         elif city == "alicante":
+            # saving rows with NaN in the first column
+            self.nan_data = self.data[self.data.iloc[:, 0].isnull()]
+
             # removing all unknown dates from dataframe and converting first column to datetime
             self.data = self.data[self.data.iloc[:, 0].notna()]
             self.data.iloc[:, 0] = pandas.to_datetime(self.data.iloc[:, 0], format="%d/%m/%Y %H:%M:%S")
@@ -64,7 +69,7 @@ class WaterMonitoringInstance:
                 second_col_splitted.columns = ['Data-1(Sensor2)', 'Data-2(Sensor2)']
 
                 new_data_f = pandas.concat([date_1_col, first_col_splitted, date_2_col, second_col_splitted], axis=1)
-                new_data_f = new_data_f.fillna(-1)
+                new_data_f = new_data_f.fillna(-150)
                 new_data_f = new_data_f.astype({'Data-1(Sensor1)': 'int64', 'Data-2(Sensor1)': 'int64',
                                                 'Data-1(Sensor2)': 'int64', 'Data-2(Sensor2)': 'int64'})
                 self.data = new_data_f
@@ -110,32 +115,69 @@ class WaterMonitoringInstance:
         fig = px.line(self.data, x=name_x, y=name_y, height=600)
         fig.show()
 
-    def make_time_features(self, column_to_process, format="%d/%m/%Y %H:%M:%S"):
+    def make_time_features(self, column_to_process):
         """
-        This method divide specified column into multiple columns which can be used to feature engineer predictions
+        This method divides specified column into multiple columns which can be used to feature engineer predictions
         :param column_to_process: Name of the column, which to split
-        :param format: Format in which the date is specified in the column
-        :return:
+        :param format: Format in which the date is specified in the column, format="%d/%m/%Y %H:%M:%S"
         """
-        # TODO implement from existing code
+        self.data['Minute'] = [i.minute for i in self.data[column_to_process]]
+        self.data['Hour'] = [i.hour for i in self.data[column_to_process]]
+        self.data['Day'] = [i.day for i in self.data[column_to_process]]
+        self.data['Month'] = [i.month for i in self.data[column_to_process]]
+        self.data['Year'] = [i.year for i in self.data[column_to_process]]
 
-        return None
+    def calculate_correlation(self, col_name_1, col_name_2=""):
+        """
+        This method can calculate correlation between all the attributes and one column.
+        Or just between two columns.
 
-    def calculate_correlation(self, col_name_1="", col_name_2=""):
+        :param col_name_1: If only this one is given calculate correlation from this to all.
+        :param col_name_2: If none is given calculate for all, if given calculate just for the two
+        :return: Returns an array of tuples. First element in a tuple is the column name and the second is Pearson coef.
         """
-        This method calculates correlation between all the atributtes in the dataframe or just between two column.
-        :param col_name_1: If only this one is given calculate correlation from this to all,
-        if none is given calculate for all
-        :param col_name_2: If only this one is given calculate correlation from this to all,
-        if none is given calculate for all
-        """
-        if col_name_1 == "" and col_name_2 == "":
-            # TODO implement calculation of correlation for all attributes and print it
-            print()
+        coef_arr = []
+
+        if col_name_1 is not None and col_name_2 == "":
+            column_names = list(self.data.columns)
+            column_names.remove(col_name_1)
+            max_correlation = [0, "none"]
+
+            for col_name in column_names:
+                try:
+                    pearson_coef, p_value = pearsonr(self.data[col_name_1], self.data[col_name])
+                    coef_arr.append((col_name, pearson_coef))
+
+                    if abs(pearson_coef) > abs(max_correlation[0]):
+                        max_correlation[0] = pearson_coef
+                        max_correlation[1] = col_name
+                except Exception as e:
+                    print("Attribute " + col_name + " can't be correlated. " + e.__str__())
+
+            print("\nColumn with the most correlation is: " + max_correlation[1] +
+                  ". Pearson coef: {:.4f}".format(max_correlation[0]))
+
+        elif col_name_1 is not None and col_name_2 != "":
+            pearson_coef, p_value = pearsonr(self.data[col_name_1], self.data[col_name_2])
+            spear_coef, p_value_s = spearmanr(self.data[col_name_1], self.data[col_name_2])
+            kendall_tau, p_value_s = kendalltau(self.data[col_name_1], self.data[col_name_2])
+            coef_arr.append((col_name_2, pearson_coef))
+
+            print("Columns '" + col_name_1 + "' and '" + col_name_2 +
+                  "' are correlated with a Pearson coef:\n{:.4f}".format(pearson_coef))
+            print("Columns '" + col_name_1 + "' and '" + col_name_2 +
+                  "' are correlated with a Spearman coef:\n{:.4f}".format(spear_coef))
+            print("Columns '" + col_name_1 + "' and '" + col_name_2 +
+                  "' are correlated with a Kendall tau coef:\n{:.4f}".format(kendall_tau))
 
         else:
-            # TODO implement calculation of correlation just for the two given column names
+            raise Exception("Wrong parameters given !")
 
+        # sorts coefficient array and returns it
+        return sorted(coef_arr, key=lambda tup: tup[1])
+
+    def get_nan_rows(self):
+        return self.nan_data
 
     def get_data_frame(self):
         """
@@ -149,6 +191,11 @@ class WaterMonitoringInstance:
         """
         self.data = data
         self.file_name = file_name
+
+    def set_df_index(self, column_name):
+        """ TODO implement this method when all is finished and we have decided where the timestamp will be
+        or in a column or in index """
+        self.data = self.data.set_index(column_name)
 
 
 class Analayzer:
