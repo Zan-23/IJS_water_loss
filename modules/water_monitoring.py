@@ -5,9 +5,6 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 from scipy.stats import pearsonr, spearmanr, kendalltau
-from sklearn.linear_model import LinearRegression, Lasso, Ridge
-from sklearn.metrics import r2_score, mean_squared_error
-from sklearn.ensemble import RandomForestRegressor
 
 
 class WaterMonitoringInstance:
@@ -46,7 +43,7 @@ class WaterMonitoringInstance:
     def transform_data(self, city, del_cols=False):
         """
         Alicante - Removes all rows where the first value is NaN, and transforms other data into a logical structure
-        |->
+        |-> converts timeStamps into datetime format, saves NaN rows into a separate attribute
 
         :param city: "alicante" or "braila", set it to to the place where the data originated
         :param del_cols: This is a flag which deletes unnecessary rows -> saving RAM
@@ -102,7 +99,6 @@ class WaterMonitoringInstance:
 
         fig = plt.figure(figsize=(18, 8), dpi=100, facecolor='w')
         plt.plot(x_data, y_data, color="red")
-        # plt.xticks([])
         plt.ylabel(name_y)
         plt.xlabel(name_x)
         plt.title(name_x + " - " + name_y)
@@ -214,110 +210,4 @@ class WaterMonitoringInstance:
         """ TODO implement this method when all is finished and we have decided where the timestamp will be
         or in a column or in index """
         self.data = self.data.set_index(column_name)
-
-
-class Analyzer:
-    dataframe = None
-
-    def __init__(self, dataframe):
-        self.dataframe = dataframe
-
-    def linear_regression(self, matrix_X, vector_Y):
-        # TODO split into learn and test, automatic trying of linear, ridge and lasso
-        # TODO Return the best model and its predictions
-        pass
-        return None
-
-    def random_forest(self, matrix_cols, vector_col, time_col_name=""):
-        """
-        This method builds a random forest model based on the sklearn library.
-
-        :param matrix_cols: Columns which you want to include in matrix X
-        :param vector_col: Column which you want to predict
-        :param time_col_name: Column in which the time series is stored(used for plotting predictions)
-        :return: Returns the actual y values, predicted values of y and
-        the timeframe for which the values were generated
-        """
-        matrix_x, vector_y, time_col = self.generate_matrix_and_vector(matrix_cols, vector_col, time_col_name)
-        if len(matrix_x) != len(vector_y):
-            raise Exception("Matrix X and vector Y must be of the same length !!")
-
-        # Splitting on learn and test
-        len_of_test = round(len(matrix_x) * 0.7)
-        learn_x = matrix_x[:len_of_test]
-        learn_y = vector_y[:len_of_test]
-
-        test_x = matrix_x[len_of_test:]
-        test_y = vector_y[len_of_test:]
-        if time_col is not None:
-            time_col = time_col[len_of_test:]
-
-        # RANDOM FOREST - 50 trees
-        regressor_rf = RandomForestRegressor(n_estimators=1000, random_state=42)
-        regressor_rf.fit(learn_x, learn_y.ravel())
-        y_predicted = regressor_rf.predict(test_x)
-
-        r2_random_f = r2_score(test_y, y_predicted)
-        print("Random forest regression R2: ", r2_random_f)
-        diff = mean_squared_error(test_y, y_predicted)
-        print("MSE result:", diff)
-
-        return test_y, y_predicted, time_col
-
-    def hierarhical_clustering(self):
-        # TODO grouping based on all attributes, try out different sets of data
-        # TODO returns different classes depending on row number
-        pass
-        return None
-
-    def generate_matrix_and_vector(self, matrix_cols, vector_col, time_col):
-        """
-        This method generate matrix X and vector Y which are used in most of the methods of this for building models.
-
-        :param matrix_cols: Columns which you want to include in matrix X
-        :param vector_col: Column which you want to predict
-        :param time_col:  Column in which the time series is stored(used for plotting predictions)
-        :return: Returns three arrays, matrix X and vector Y and timestamp array
-        """
-        matrix_x = self.dataframe[matrix_cols].to_numpy()
-        vector_col = self.dataframe[vector_col].to_numpy()
-        timestamp_col = None
-
-        if time_col != "":
-            timestamp_col = self.dataframe[time_col].to_numpy()
-
-        return matrix_x, vector_col, timestamp_col
-
-
-"""
-        elif city == "alicante":
-            # saving rows with NaN in the first column
-            self.nan_data = self.data[self.data.iloc[:, 0].isnull()]
-
-            # removing all unknown dates from dataframe and converting first column to datetime
-            self.data = self.data[self.data.iloc[:, 0].notna()]
-            self.data.iloc[:, 0] = pandas.to_datetime(self.data.iloc[:, 0], format="%d/%m/%Y %H:%M:%S")
-
-            first_col_splitted = self.data.iloc[:, 1].str.split(',', expand=True)
-            first_col_splitted.columns = ['Data-1(Sensor1)', 'Data-2(Sensor1)']
-            date_1_col = self.data.iloc[:, 0]
-
-            if not del_cols:
-                date_2_col = self.data.iloc[:, 2]
-                second_col_splitted = self.data.iloc[:, 3].str.split(',', expand=True)
-                second_col_splitted.columns = ['Data-1(Sensor2)', 'Data-2(Sensor2)']
-
-                new_data_f = pandas.concat([date_1_col, first_col_splitted, date_2_col, second_col_splitted], axis=1)
-                new_data_f = new_data_f.fillna(-150)
-                new_data_f = new_data_f.astype({'Data-1(Sensor1)': 'int64', 'Data-2(Sensor1)': 'int64',
-                                                'Data-1(Sensor2)': 'int64', 'Data-2(Sensor2)': 'int64'})
-                self.data = new_data_f
-            else:
-                # If flag is set, only the first 3 columns are returned as specified on drive
-                new_data_f = pandas.concat([date_1_col, first_col_splitted], axis=1)
-                new_data_f = new_data_f.fillna(-1)
-                new_data_f = new_data_f.astype({'Data-1(Sensor1)': 'int64', 'Data-2(Sensor1)': 'int64'})
-                self.data = new_data_f
-
-"""
 
